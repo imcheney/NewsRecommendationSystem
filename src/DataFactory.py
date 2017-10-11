@@ -212,7 +212,53 @@ def generate_all_file():
                                                 oldUserList,
                                                 freqUserList, 4)
 
+    # for assessment
+    create_testSet_userid_to_actualReadNewsid_table("../data/testSet_userid_to_actualReadNewsid_table.npy", test_data)
+
+
+def getDataStatistics():
+    sep = '\t'
+    names = ['user_id', 'news_id', 'read_time', 'news_title', 'news_content', 'news_publi_time']
+    raw_data, train_data, test_data = get_basic_data("../data/raw_data.txt", sep, names)
+
+    print(str.format("whole_data: %d") % len(raw_data))
+    print(str.format("train_data: %d") % len(train_data))
+    print(str.format("test_data: %d") % len(test_data))
+    print()
+
+    wholeSet_userlist = raw_data['user_id'].drop_duplicates().values.tolist()
+    trainSet_userlist = train_data['user_id'].drop_duplicates().values.tolist()
+    testSet_userlist = test_data['user_id'].drop_duplicates().values.tolist()
+    print(str.format("whole_user: %d") % len(wholeSet_userlist))
+    print(str.format("train_user: %d") % len(trainSet_userlist))
+    print(str.format("test_user: %d") % len(testSet_userlist))
+
+def create_testSet_userid_to_actualReadNewsid_table(filename, test_data):
+    """
+    生成一个测试集中userid真实读过的新闻的映射表
+    :param filename: 持久化文件路径
+    :param test_data: dataframe
+    :return: nothing
+    """
+    if isinstance(test_data, pd.DataFrame):
+        userid_newsid_df = test_data.loc[:, ['user_id', 'news_id']]
+        userid_to_newsidList_dict = {}
+        for userid, newsid in userid_newsid_df.values:
+            userid_to_newsidList_dict[userid] = userid_to_newsidList_dict.get(userid, [])
+            userid_to_newsidList_dict[userid].append(newsid)
+        np.save(filename, userid_to_newsidList_dict)
+
+
+def create_testSet_useridSet(filename, test_data):
+    if isinstance(test_data, pd.DataFrame):
+        userid_list = test_data['user_id'].drop_duplicates().values.tolist()
+        np.save(filename, set(userid_list))
 
 if __name__ == "__main__":
     #generate_all_file()
+    #getDataStatistics()
+    sep = '\t'
+    names = ['user_id', 'news_id', 'read_time', 'news_title', 'news_content', 'news_publi_time']
+    raw_data, train_data, test_data = get_basic_data("../data/raw_data.txt", sep, names)
+    create_testSet_useridSet("../data/testSet_useridSet", test_data)
     print('job done!')

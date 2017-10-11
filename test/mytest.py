@@ -50,7 +50,7 @@ def test7():
     print(l_freq)
     print(len(l_freq))
     print(type(l_freq))
-    print(l_old)
+    print("oldUserList:", l_old)
     print(len(l_old))
     print(type(l_old))
     print(list(l_freq))
@@ -73,11 +73,29 @@ def test10():
     print(type(userlist))
 
 def test11():
-    from src.main import get_topK_key
+    from src.Engine import get_topK_key
     dic = {"BJ": 22, "SH":24, "SZ":12, "TY": 30}
     l = get_topK_key(dic, 1)
     print(l)
     #测试成功, 原来是sorted(d.items(), key=lambda d:d[1], reverse=True)我漏掉了items()这个调用
 
+def test12():
+    trainSet_dict = np.load("../data/trainSet_userid_to_tagset_table.npy").item()
+    print(trainSet_dict)
+    print(len(trainSet_dict))
+    #测试成功, 验证的用户数字和DataFactory中的方法验证一致
+
+def test13():
+    testSet_actualReadNews = np.load("../data/testSet_userid_to_actualReadNewsid_table.npy").item()
+    print(testSet_actualReadNews)
+    print(len(testSet_actualReadNews))
+
+def test14():
+    users = list(np.load("../data/testSet_useridSet.npy").item())
+    print(users)
+    print(len(users))
+
+
+
 if __name__ == "__main__":
-    test11()
+    test7()
