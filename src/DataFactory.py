@@ -24,7 +24,7 @@ def get_basic_data(filename, sep, names, septime="2014-03-21 00:00:00"):
     raw_data = pd.read_table(filename, sep=sep, header=None, names=names).dropna(
         how='any')  # drop知乎从116225降低到102204条浏览记录
     read_times = raw_data['read_time']
-    sep_time = "2014-03-20 23:59:00"
+    sep_time = "2014-03-20 23:59:00"  # 21日及以后的为testSet
     time_array = time.strptime(sep_time, "%Y-%m-%d %H:%M:%S")
     timestamp = int(time.mktime(time_array))
 
