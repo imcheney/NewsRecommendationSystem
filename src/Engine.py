@@ -27,24 +27,31 @@ testSet_newsid_to_tags_dict = np.load('../data/testSet_newsid_to_tags_table.npy'
 trainSet_userid_to_tagset_dict = np.load('../data/trainSet_userid_to_tagset_table.npy').item()
 trainSet_userid_to_groupTagset_dict = np.load('../data/trainSet_userid_to_groupTagset_table.npy').item()
 
-testSet_userid_to_lastReadTime_dict = np.load('../data/testSet_userid_to_lastReadTime_table.npy').item() # 导入测试数据集中由用户id和用户最后一次浏览时间组成的表
-wholeSet_newsid_and_readtime_df = pd.read_csv('../data/wholeSet_newsid_and_readtime_table.csv').loc[:, ['news_id', 'read_time']]
+testSet_userid_to_lastReadTime_dict = np.load(
+    '../data/testSet_userid_to_lastReadTime_table.npy').item()  # 导入测试数据集中由用户id和用户最后一次浏览时间组成的表
+wholeSet_newsid_and_readtime_df = pd.read_csv('../data/wholeSet_newsid_and_readtime_table.csv').loc[:,
+                                  ['news_id', 'read_time']]
 wholeSet_newsid_to_newstitle_dict = np.load('../data/wholeSet_newsid_to_newstitle_table.npy').item()
 
 
 def calc_simVal(SetA, SetB):
     '''
-    计算两个关系集之间的相似度. TODO:这里的实现应该是有问题的, 缺少了分母的并集计算. 不过我们要以实践做测试.
+    计算两个关系集之间的相似度.
     这个计算的就是最简单的Jaccard similarity: ﻿sim(C1, C2) = |C1∩C2| / |C1∪C2|
     :param SetA: 集合A
     :param SetB: 集合B
     :return: 相似度
     '''
-    sim = 0
+    intersection = []
+    union = list(SetA.copy())
     for key in SetA:
         if key in SetB:
-            sim = sim + 1
-    return sim  # TODO: 没有分母部分
+            intersection.append(key)
+    for key in SetB:
+        if key not in SetA:
+            union.append(key)
+
+    return len(intersection) / len(union)
 
 
 def get_topK_key(dic, k):
@@ -54,7 +61,7 @@ def get_topK_key(dic, k):
     :param k: k值
     :return: list of topK key of this dict
     """
-    return [t[0] for t in sorted(dic.items(), key=lambda d:d[1], reverse=True)][:k]
+    return [t[0] for t in sorted(dic.items(), key=lambda d: d[1], reverse=True)][:k]
 
 
 def get_hot_news_list(newsid_and_readtime_df, k=3, time_end=1394788902, days=1):  # time_end默认是3-14日上午
@@ -75,7 +82,8 @@ def get_hot_news_list(newsid_and_readtime_df, k=3, time_end=1394788902, days=1):
     return hotNews_list
 
 
-def calc_simVal_between_givenUser_and_eachTestSetNews(userid, userid_to_tags_dict, testSet_newsid_to_tags_dict, newslist):
+def calc_simVal_between_givenUser_and_eachTestSetNews(userid, userid_to_tags_dict, testSet_newsid_to_tags_dict,
+                                                      newslist):
     """
     两种算法的共同中间步骤
     :param userid: 用户id
@@ -87,13 +95,15 @@ def calc_simVal_between_givenUser_and_eachTestSetNews(userid, userid_to_tags_dic
     newsid_to_simVal_dict = {}
     if isinstance(testSet_newsid_to_tags_dict, dict):
         for newsid in newslist:
-            newsid_to_simVal_dict[newsid] = calc_simVal(userid_to_tags_dict[userid],testSet_newsid_to_tags_dict[newsid])
+            newsid_to_simVal_dict[newsid] = calc_simVal(userid_to_tags_dict[userid],
+                                                        testSet_newsid_to_tags_dict[newsid])
     return newsid_to_simVal_dict  # 在content-based情形下, 是返回testSet中所有newsid:相似度的映射dict;
 
 
 def hot_news_service(newsid_and_readtime_df, userid, L):
     return get_hot_news_list(newsid_and_readtime_df, k=L, time_end=testSet_userid_to_lastReadTime_dict[userid],
                              days=1)
+
 
 def get_close_range_news(center_time):
     # time_array = time.strptime(center_time, "%Y-%m-%d %H:%M:%S")
@@ -143,15 +153,16 @@ def content_based_service(newsid_and_readtime_df, userid, L):
     :param L: 推荐列表长度
     :return: a list of recommended newsid
     """
-    #TODO: 01 限制计算CB的时间范围是用户最后阅读时间当天, 这样减小计算量, 也增大了可能性; CF同理
+    # TODO: 01 限制计算CB的时间范围是用户最后阅读时间当天, 这样减小计算量, 也增大了可能性; CF同理
     # 但是, 目前出现的问题是, 如果启用close_range_news, 会发现有部分新闻
     if userid in trainSet_userid_to_tagset_dict.keys():  # 如果用户id能找得到其的过去兴趣标签(非冷启动的)
         last_read_time = testSet_userid_to_lastReadTime_dict[userid]
         # newslist = get_close_range_news(last_read_time)  # 暂时不要使用close_range_news
         newsid_to_simVal_dict = calc_simVal_between_givenUser_and_eachTestSetNews(userid,
                                                                                   trainSet_userid_to_tagset_dict,
-                                                                                  testSet_newsid_to_tags_dict, testSet_newsid_to_tags_dict.keys())
-        return get_topK_key(newsid_to_simVal_dict, L)  # 返回相似度最高的5个
+                                                                                  testSet_newsid_to_tags_dict,
+                                                                                  testSet_newsid_to_tags_dict.keys())
+        return get_topK_key(newsid_to_simVal_dict, L)  # 返回相似度最高的L个新闻的id
     else:  # 用户最后阅读时间之前一天的新闻top5
         return get_hot_news_list(newsid_and_readtime_df, k=L, time_end=testSet_userid_to_lastReadTime_dict[userid],
                                  days=1)
