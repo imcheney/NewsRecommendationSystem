@@ -1,4 +1,4 @@
-新闻推荐系统 V0.3 陈小龙
+新闻推荐系统 V0.3 cheney
 
 #快速运行
 输入: python3 Engine.py -m cb -i 436906
